@@ -96,7 +96,7 @@ export default function App() {
       }
     } catch {
       setQuotes([]);
-    } fontally {
+    } finally {
       setLoadingQuotes(false);
     }
   };

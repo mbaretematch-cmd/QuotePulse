@@ -10,7 +10,6 @@ import {
   Mail, 
   Phone, 
   Clock, 
-  Filter, 
   Check, 
   ShieldCheck, 
   Briefcase,
@@ -20,7 +19,7 @@ import {
   Zap
 } from 'lucide-react';
 
-// Initialize Supabase Client (Use the same flow-queue instance we established)
+// Initialize Supabase Client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zrcdlgbcoswfuhfmmasg.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_vDUe8iihMX82M8yD9wXP2A_BvWZsYpB';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -495,7 +494,7 @@ export default function App() {
               ))}
             </div>
 
-            {/* Sophisticated Pipeline Table */}
+            {/* Pipeline Table */}
             <div className="bg-[#0c1018] border border-white/[0.04] rounded-3xl overflow-hidden shadow-2xl shadow-black/30">
               {loadingQuotes ? (
                 <div className="p-16 text-center text-slate-500 font-medium">Accessing agency database pipeline...</div>

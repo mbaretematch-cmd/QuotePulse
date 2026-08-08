@@ -96,7 +96,7 @@ export default function App() {
       }
     } catch {
       setQuotes([]);
-    } finally {
+    } fontally {
       setLoadingQuotes(false);
     }
   };
@@ -203,7 +203,7 @@ export default function App() {
           <div className="flex items-center gap-1.5 bg-[#0e121a] p-1 rounded-full border border-white/[0.04]">
             {[
               { id: 'calculator', label: 'Agency Cost Calculator', icon: Calculator },
-              { id: 'admin', label: 'Lumpacha Lead Pipeline', icon: LayoutDashboard }
+              { id: 'admin', label: 'Lampacho Lead Pipeline', icon: LayoutDashboard }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -221,7 +221,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3">
-             <div className="text-sm font-medium text-slate-500">Lumpacha Creative Org</div>
+             <div className="text-sm font-medium text-slate-500">Lampacho Creative Org</div>
              <img src={`https://api.dicebear.com/8.x/initials/svg?seed=Stuart`} className="w-9 h-9 rounded-full border border-white/10" alt="Stuart" />
           </div>
         </div>
@@ -232,7 +232,7 @@ export default function App() {
         {activeTab === 'calculator' ? (
           <div className="grid grid-cols-1 xl:grid-cols-[1fr,460px] gap-12 items-start">
             
-            {/* Left: Enhanced Configurator Journey */}
+            {/* Left: Configurator Journey */}
             <div className="space-y-10">
               <div className="max-w-3xl">
                 <div className="flex items-center gap-3 text-indigo-400 mb-2">
@@ -240,7 +240,7 @@ export default function App() {
                    <span className="font-semibold tracking-wide uppercase text-sm">Automated Scope Estimator v2.0</span>
                 </div>
                 <h1 className="text-5xl font-black tracking-tighter text-white leading-[0.95]">
-                  Instant Lumpacha <span className="text-indigo-400">Creative</span> Quote
+                  Instant Lampacho <span className="text-indigo-400">Creative</span> Quote
                 </h1>
                 <p className="text-lg text-slate-400 mt-4 leading-relaxed">
                   Design your ideal system architecture below. Receive an immediate, fixed-price breakdown—no generic spreadsheets, no hidden setup fees.
@@ -302,7 +302,6 @@ export default function App() {
                     </span>
                   </div>
                   <div className="px-1 relative">
-                      {/* Custom Track Visuals */}
                       <div className="absolute inset-x-1 top-3 h-2.5 bg-[#121826] rounded-full border border-white/[0.03]"></div>
                       <div className="absolute left-1 top-3 h-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-full border border-indigo-500" style={{ width: `${((scopeUnits - 1) / (15 - 1)) * 100}%` }}></div>
                       
@@ -314,7 +313,6 @@ export default function App() {
                         onChange={(e) => setScopeUnits(parseInt(e.target.value))}
                         className="relative w-full h-8 bg-transparent appearance-none cursor-pointer accent-white opacity-0"
                       />
-                      {/* Real Thumb */}
                       <div className="absolute top-[7px] w-7 h-7 bg-white rounded-full shadow-2xl pointer-events-none border-4 border-indigo-600 flex items-center justify-center transform -translate-x-1/2" style={{ left: `calc( ${((scopeUnits - 1) / (15 - 1)) * 100}% )` }}>
                         <Zap className="w-3.5 h-3.5 text-indigo-700" />
                       </div>
@@ -452,7 +450,7 @@ export default function App() {
             <div className="max-w-3xl">
                 <div className="flex items-center gap-3 text-emerald-400 mb-2">
                    <LayoutDashboard className="w-5 h-5" />
-                   <span className="font-semibold tracking-wide uppercase text-sm">Lumpacha CRM Database v1.4</span>
+                   <span className="font-semibold tracking-wide uppercase text-sm">Lampacho CRM Database v1.4</span>
                 </div>
                 <h1 className="text-5xl font-black tracking-tighter text-white leading-[0.95]">
                   Active <span className="text-emerald-400">Prospect</span> Pipeline
@@ -581,7 +579,7 @@ export default function App() {
                 </div>
                 <h3 className="text-3xl font-black text-white tracking-tighter">Inquiry Registered!</h3>
                 <p className="text-slate-400 leading-relaxed">
-                  Your guaranteed Lumpacha Creative estimate for <strong className="text-white text-lg font-bold">£{calculateTotal().toLocaleString()}</strong> has been captured. Our team will generate your comprehensive PDF contract proposal shortly.
+                  Your guaranteed Lampacho Creative estimate for <strong className="text-white text-lg font-bold">£{calculateTotal().toLocaleString()}</strong> has been captured. Our team will generate your comprehensive PDF contract proposal shortly.
                 </p>
               </div>
             ) : (

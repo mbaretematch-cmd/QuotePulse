@@ -13,10 +13,14 @@ import {
   Filter, 
   Check, 
   ShieldCheck, 
-  Briefcase
+  Briefcase,
+  Layers3,
+  Users,
+  Target,
+  Zap
 } from 'lucide-react';
 
-// Initialize Supabase Client with direct fallback credentials to prevent startup crashes
+// Initialize Supabase Client (Use the same flow-queue instance we established)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zrcdlgbcoswfuhfmmasg.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_vDUe8iihMX82M8yD9wXP2A_BvWZsYpB';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -36,20 +40,20 @@ interface Quote {
 }
 
 const SERVICE_OPTIONS = [
-  { id: 'clinic-setup', name: 'Medical/Clinic Patient Flow System', basePrice: 450, unitLabel: 'Treatment Rooms', unitPrice: 75 },
-  { id: 'custom-booking', name: 'Custom Appointment & Queue Engine', basePrice: 350, unitLabel: 'Staff Members', unitPrice: 50 },
-  { id: 'workflow-auto', name: 'Operations & Workflow Automation', basePrice: 500, unitLabel: 'Active Workflows', unitPrice: 100 },
+  { id: 'clinic-setup', name: 'Clinical Flow System', icon: Target, basePrice: 450, unitLabel: 'Treatment Rooms', unitPrice: 75, desc: 'Setup optimization & patient throughput management for medical practices.' },
+  { id: 'custom-booking', name: 'Queue & Engine Engine', icon: Users, basePrice: 350, unitLabel: 'Staff Members', unitPrice: 50, desc: 'Advanced multi-provider booking platform with logic-based queuing.' },
+  { id: 'workflow-auto', name: 'Operations Automation', icon: Layers3, basePrice: 500, unitLabel: 'Active Workflows', unitPrice: 100, desc: 'Automating repetitive internal business processes & reporting.' },
 ];
 
 const TIER_OPTIONS = [
-  { id: 'standard', name: 'Standard Delivery', multiplier: 1.0, desc: 'Ready in 5 business days' },
-  { id: 'priority', name: 'Priority Express', multiplier: 1.3, desc: 'Ready in 48 hours' },
+  { id: 'standard', name: 'Standard Build', multiplier: 1.0, desc: 'Ready in ~5 business days' },
+  { id: 'priority', name: 'Priority Express', multiplier: 1.3, desc: 'Launched in 48 hours' },
 ];
 
 const ADDON_OPTIONS = [
-  { id: 'sms-notifications', name: 'Twilio Automated SMS Notifications', price: 150 },
-  { id: 'branding-custom', name: 'Custom Branding & White-labeling', price: 200 },
-  { id: 'priority-support', name: '12 Months SLA Support & Maintenance', price: 300 },
+  { id: 'sms-notifications', name: 'Twilio SMS Gateway Integration', price: 150 },
+  { id: 'branding-custom', name: 'Custom Branding & UI White-labeling', price: 200 },
+  { id: 'priority-support', name: '12 Months SLA Maintenance', price: 300 },
 ];
 
 export default function App() {
@@ -58,8 +62,8 @@ export default function App() {
   // Calculator Form State
   const [selectedService, setSelectedService] = useState(SERVICE_OPTIONS[0]);
   const [selectedTier, setSelectedTier] = useState(TIER_OPTIONS[0]);
-  const [scopeUnits, setScopeUnits] = useState<number>(3);
-  const [selectedAddons, setSelectedAddons] = useState<string[]>(['sms-notifications']);
+  const [scopeUnits, setScopeUnits] = useState<number>(4);
+  const [selectedAddons, setSelectedAddons] = useState<string[]>(['sms-notifications', 'priority-support']);
   
   // Lead Intake Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -74,36 +78,6 @@ export default function App() {
   const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('All');
 
-  // Fallback data for local presentation testing
-  const mockQuotes: Quote[] = [
-    {
-      id: '1',
-      created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-      client_name: 'Dr. Alistair Vance',
-      client_email: 'a.vance@harleystreetclinic.co.uk',
-      client_phone: '+44 20 7946 0912',
-      service_type: 'Medical/Clinic Patient Flow System',
-      tier: 'Priority Express',
-      scope_units: 4,
-      addons: ['Twilio Automated SMS Notifications', 'Custom Branding & White-labeling'],
-      estimated_price: 1180,
-      status: 'New'
-    },
-    {
-      id: '2',
-      created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
-      client_name: 'Sarah Jenkins',
-      client_email: 'sarah@apexbarbers.co.uk',
-      client_phone: '+44 161 496 0123',
-      service_type: 'Custom Appointment & Queue Engine',
-      tier: 'Standard Delivery',
-      scope_units: 6,
-      addons: ['Custom Branding & White-labeling'],
-      estimated_price: 850,
-      status: 'Contacted'
-    }
-  ];
-
   useEffect(() => {
     fetchQuotes();
   }, []);
@@ -116,13 +90,13 @@ export default function App() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error || !data || data.length === 0) {
-        setQuotes(mockQuotes);
+      if (error || !data) {
+        setQuotes([]);
       } else {
         setQuotes(data);
       }
     } catch {
-      setQuotes(mockQuotes);
+      setQuotes([]);
     } finally {
       setLoadingQuotes(false);
     }
@@ -172,13 +146,8 @@ export default function App() {
       if (data && data[0]) {
         setQuotes(prev => [data[0], ...prev]);
       }
-    } catch {
-      const localQuote: Quote = {
-        ...newQuoteObj,
-        id: Date.now().toString(),
-        created_at: new Date().toISOString()
-      };
-      setQuotes(prev => [localQuote, ...prev]);
+    } catch (err) {
+      console.error("Submission error:", err);
     } finally {
       setSubmitting(false);
       setSubmitSuccess(true);
@@ -196,13 +165,9 @@ export default function App() {
     setQuotes(prev => prev.map(q => q.id === id ? { ...q, status: newStatus } : q));
     try {
       await supabase.from('quotes').update({ status: newStatus }).eq('id', id);
-    } catch {
-      // Retain local state fallback
+    } catch (err) {
+      console.error("Status update error:", err);
     }
-  };
-
-  const seedDemoQuotes = () => {
-    setQuotes(mockQuotes);
   };
 
   const filteredQuotes = filterStatus === 'All' 
@@ -212,284 +177,317 @@ export default function App() {
   const totalPipelineValue = quotes.reduce((acc, q) => acc + Number(q.estimated_price), 0);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
-      {/* Navigation Header */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-tr from-indigo-500 to-violet-500 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/20">
-              <Calculator className="h-6 w-6" />
+    <div className="min-h-screen bg-[#07090e] text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+      {/* Dynamic Glow Background Layer */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-indigo-950/30 rounded-full blur-[160px] opacity-70"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-violet-950/20 rounded-full blur-[130px] opacity-60"></div>
+      </div>
+
+      {/* Modern SaaS Navigation */}
+      <header className="sticky top-0 z-50 bg-[#07090e]/70 backdrop-blur-xl border-b border-white/[0.03]">
+        <div className="max-w-[1500px] mx-auto px-6 lg:px-10 h-18 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-gradient-to-tr from-indigo-500 to-violet-500 p-2.5 rounded-2xl text-white shadow-xl shadow-indigo-500/10">
+              <Layers3 className="h-6 w-6" />
             </div>
             <div>
-              <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+              <span className="text-2xl font-black tracking-tight bg-gradient-to-br from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
                 QuotePulse
               </span>
-              <span className="ml-2 text-xs font-semibold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
-                UK Edition (£)
+              <span className="ml-2 text-xs font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                UK (£)
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-            <button
-              onClick={() => setActiveTab('calculator')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'calculator'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              <Calculator className="h-4 w-4" />
-              Client Estimator
-            </button>
-            <button
-              onClick={() => setActiveTab('admin')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'admin'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Lead Pipeline
-              {quotes.length > 0 && (
-                <span className="ml-1 bg-indigo-500/30 text-indigo-300 text-xs px-2 py-0.5 rounded-full font-bold">
-                  {quotes.length}
-                </span>
-              )}
-            </button>
+          <div className="flex items-center gap-1.5 bg-[#0e121a] p-1 rounded-full border border-white/[0.04]">
+            {[
+              { id: 'calculator', label: 'Agency Cost Calculator', icon: Calculator },
+              { id: 'admin', label: 'Lumpacha Lead Pipeline', icon: LayoutDashboard }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${
+                  activeTab === tab.id
+                    ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#121826]'
+                }`}
+              >
+                <tab.icon className={`h-4.5 w-4.5 ${activeTab === tab.id ? 'opacity-100' : 'opacity-60'}`} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3">
+             <div className="text-sm font-medium text-slate-500">Lumpacha Creative Org</div>
+             <img src={`https://api.dicebear.com/8.x/initials/svg?seed=Stuart`} className="w-9 h-9 rounded-full border border-white/10" alt="Stuart" />
           </div>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content Area */}
+      <main className="max-w-[1500px] mx-auto px-6 lg:px-10 py-10">
         {activeTab === 'calculator' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr,460px] gap-12 items-start">
             
-            {/* Left: Estimator Configurator */}
-            <div className="lg:col-span-7 space-y-6">
-              <div>
-                <h1 className="text-3xl font-extrabold tracking-tight text-white">
-                  Instant Project Quote Estimator
+            {/* Left: Enhanced Configurator Journey */}
+            <div className="space-y-10">
+              <div className="max-w-3xl">
+                <div className="flex items-center gap-3 text-indigo-400 mb-2">
+                   <Zap className="w-5 h-5" />
+                   <span className="font-semibold tracking-wide uppercase text-sm">Automated Scope Estimator v2.0</span>
+                </div>
+                <h1 className="text-5xl font-black tracking-tighter text-white leading-[0.95]">
+                  Instant Lumpacha <span className="text-indigo-400">Creative</span> Quote
                 </h1>
-                <p className="text-slate-400 mt-2 text-base">
-                  Configure your business requirements below for an instant breakdown and fixed proposal cost.
+                <p className="text-lg text-slate-400 mt-4 leading-relaxed">
+                  Design your ideal system architecture below. Receive an immediate, fixed-price breakdown—no generic spreadsheets, no hidden setup fees.
                 </p>
               </div>
 
-              {/* Service Selection */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                <label className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2 mb-4">
-                  <Briefcase className="h-4 w-4" /> 1. Select Primary System Architecture
+              {/* 1. System Cards */}
+              <div className="border border-white/[0.04] bg-[#0c1018] rounded-3xl p-8 shadow-inner-dark">
+                <label className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-3 mb-6">
+                  <Briefcase className="h-5 w-5 text-indigo-500" /> Stage 1: Define Your Core System Architecture
                 </label>
-                <div className="grid grid-cols-1 gap-3">
-                  {SERVICE_OPTIONS.map((service) => (
-                    <button
-                      key={service.id}
-                      onClick={() => setSelectedService(service)}
-                      className={`text-left p-4 rounded-xl border transition-all flex items-center justify-between ${
-                        selectedService.id === service.id
-                          ? 'border-indigo-500 bg-indigo-500/10 text-white ring-1 ring-indigo-500'
-                          : 'border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700 hover:bg-slate-800/50'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-semibold text-base">{service.name}</div>
-                        <div className="text-xs text-slate-400 mt-1">
-                          Base Architecture: £{service.basePrice} + £{service.unitPrice} per {service.unitLabel.toLowerCase().slice(0, -1)}
-                        </div>
-                      </div>
-                      {selectedService.id === service.id && (
-                        <div className="bg-indigo-500 text-white rounded-full p-1">
-                          <Check className="h-4 w-4" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Scope Slider */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                <div className="flex justify-between items-center mb-4">
-                  <label className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" /> 2. Scale & Operational Scope
-                  </label>
-                  <span className="text-sm font-bold text-white bg-indigo-500/20 border border-indigo-500/30 px-3 py-1 rounded-full">
-                    {scopeUnits} {selectedService.unitLabel}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="15"
-                  value={scopeUnits}
-                  onChange={(e) => setScopeUnits(parseInt(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                />
-                <div className="flex justify-between text-xs text-slate-500 mt-2">
-                  <span>1 {selectedService.unitLabel.slice(0, -1)}</span>
-                  <span>15 {selectedService.unitLabel}</span>
-                </div>
-              </div>
-
-              {/* Addons */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                <label className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2 mb-4">
-                  <ShieldCheck className="h-4 w-4" /> 3. Optional Module Integrations
-                </label>
-                <div className="grid grid-cols-1 gap-3">
-                  {ADDON_OPTIONS.map((addon) => {
-                    const isChecked = selectedAddons.includes(addon.id);
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {SERVICE_OPTIONS.map((service) => {
+                    const Icon = service.icon;
+                    const isSelected = selectedService.id === service.id;
                     return (
-                      <div
-                        key={addon.id}
-                        onClick={() => handleAddonToggle(addon.id)}
-                        className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                          isChecked
-                            ? 'border-indigo-500/60 bg-indigo-500/10 text-white'
-                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700'
+                      <button
+                        key={service.id}
+                        onClick={() => setSelectedService(service)}
+                        className={`group p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden ${
+                          isSelected
+                            ? 'border-indigo-600 bg-gradient-to-b from-indigo-950/50 to-transparent text-white ring-2 ring-indigo-500/50 shadow-2xl'
+                            : 'border-white/[0.04] bg-[#0e121a]/50 text-slate-300 hover:border-indigo-800/40 hover:bg-[#121826]'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                            isChecked ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-slate-700 bg-slate-900'
-                          }`}>
-                            {isChecked && <Check className="h-3.5 w-3.5" />}
-                          </div>
-                          <span className="text-sm font-medium">{addon.name}</span>
+                        {isSelected && (
+                           <div className="absolute top-[-5px] right-[-5px] w-12 h-12 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-bl-3xl flex items-center justify-center text-white shadow-xl">
+                             <Check className="w-6 h-6 stroke-[3]" />
+                           </div>
+                        )}
+                        <div className={`p-3 rounded-xl inline-block mb-5 border transition-colors ${
+                          isSelected ? 'bg-indigo-600/30 border-indigo-500' : 'bg-[#151b29] border-white/[0.03] group-hover:border-indigo-900 group-hover:bg-indigo-950/20'
+                        }`}>
+                          <Icon className={`h-7 w-7 ${isSelected ? 'text-white' : 'text-slate-400 group-hover:text-indigo-300'}`} />
                         </div>
-                        <span className="text-sm font-semibold text-slate-300">+£{addon.price}</span>
-                      </div>
+                        <h3 className="font-extrabold text-lg tracking-tight mb-1">{service.name}</h3>
+                        <p className="text-xs text-slate-400 leading-relaxed mb-4">{service.desc}</p>
+                        <div className={`text-xs p-3 rounded-lg border transition-colors ${isSelected ? 'bg-indigo-900/30 border-indigo-700' : 'bg-[#121826] border-white/[0.03]'}`}>
+                          <span className="font-bold text-white">Setup £{service.basePrice}</span>
+                          <span className="text-slate-500 mx-1">•</span>
+                          <span className="text-slate-400">+£{service.unitPrice}/{service.unitLabel.slice(0, -1)}</span>
+                        </div>
+                      </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Delivery Timeline */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                <label className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2 mb-4">
-                  <Clock className="h-4 w-4" /> 4. Delivery & Deployment Timeline
+              {/* 2. Slider and Addons Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Scope Slider */}
+                <div className="border border-white/[0.04] bg-[#0c1018] rounded-3xl p-8 shadow-inner-dark">
+                  <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/[0.03]">
+                    <label className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-3">
+                      <Sparkles className="h-5 w-5 text-indigo-500" /> Stage 2: Establish Operational Scale
+                    </label>
+                    <span className="text-sm font-black text-indigo-100 bg-indigo-600 border border-indigo-500 px-4 py-1.5 rounded-full shadow-lg">
+                      {scopeUnits} {selectedService.unitLabel}
+                    </span>
+                  </div>
+                  <div className="px-1 relative">
+                      {/* Custom Track Visuals */}
+                      <div className="absolute inset-x-1 top-3 h-2.5 bg-[#121826] rounded-full border border-white/[0.03]"></div>
+                      <div className="absolute left-1 top-3 h-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-full border border-indigo-500" style={{ width: `${((scopeUnits - 1) / (15 - 1)) * 100}%` }}></div>
+                      
+                      <input
+                        type="range"
+                        min="1"
+                        max="15"
+                        value={scopeUnits}
+                        onChange={(e) => setScopeUnits(parseInt(e.target.value))}
+                        className="relative w-full h-8 bg-transparent appearance-none cursor-pointer accent-white opacity-0"
+                      />
+                      {/* Real Thumb */}
+                      <div className="absolute top-[7px] w-7 h-7 bg-white rounded-full shadow-2xl pointer-events-none border-4 border-indigo-600 flex items-center justify-center transform -translate-x-1/2" style={{ left: `calc( ${((scopeUnits - 1) / (15 - 1)) * 100}% )` }}>
+                        <Zap className="w-3.5 h-3.5 text-indigo-700" />
+                      </div>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-600 mt-2 font-medium">
+                    <span>Minimal Startup (1 {selectedService.unitLabel.slice(0, -1)})</span>
+                    <span>Growth Business (15 {selectedService.unitLabel})</span>
+                  </div>
+                </div>
+
+                {/* Integration Addons */}
+                <div className="border border-white/[0.04] bg-[#0c1018] rounded-3xl p-8 shadow-inner-dark">
+                  <label className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-3 mb-6">
+                    <ShieldCheck className="h-5 w-5 text-indigo-500" /> Stage 3: Premium Integrations
+                  </label>
+                  <div className="grid grid-cols-1 gap-3">
+                    {ADDON_OPTIONS.map((addon) => {
+                      const isChecked = selectedAddons.includes(addon.id);
+                      return (
+                        <div
+                          key={addon.id}
+                          onClick={() => handleAddonToggle(addon.id)}
+                          className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between group ${
+                            isChecked
+                              ? 'border-indigo-600/60 bg-indigo-950/20 text-white'
+                              : 'border-white/[0.03] bg-[#0e121a]/50 text-slate-400 hover:border-indigo-800 hover:bg-[#121826]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-5.5 h-5.5 rounded-md border flex items-center justify-center transition-colors ${
+                              isChecked ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-white/10 bg-[#151b29] group-hover:border-indigo-700'
+                            }`}>
+                              {isChecked && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                            </div>
+                            <span className={`text-sm font-medium ${isChecked ? 'text-indigo-50' : 'text-slate-300'}`}>{addon.name}</span>
+                          </div>
+                          <span className={`text-sm font-bold ${isChecked ? 'text-white' : 'text-indigo-400'}`}>+£{addon.price}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Timeline Choice */}
+              <div className="border border-white/[0.04] bg-[#0c1018] rounded-3xl p-8 shadow-inner-dark mb-10">
+                <label className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-3 mb-6">
+                  <Clock className="h-5 w-5 text-indigo-500" /> Stage 4: Launch & Deployment Sprint
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {TIER_OPTIONS.map((tier) => (
                     <button
                       key={tier.id}
                       onClick={() => setSelectedTier(tier)}
-                      className={`text-left p-4 rounded-xl border transition-all ${
+                      className={`text-left p-5 rounded-2xl border transition-all relative ${
                         selectedTier.id === tier.id
-                          ? 'border-indigo-500 bg-indigo-500/10 text-white ring-1 ring-indigo-500'
-                          : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700'
+                          ? 'border-indigo-600 bg-indigo-950/40 text-white shadow-2xl'
+                          : 'border-white/[0.03] bg-[#0e121a]/50 text-slate-400 hover:border-indigo-800'
                       }`}
                     >
-                      <div className="font-semibold text-sm">{tier.name}</div>
-                      <div className="text-xs text-slate-500 mt-1">{tier.desc}</div>
+                       {selectedTier.id === tier.id && (
+                          <div className="absolute top-[-4px] right-[-4px] w-10 h-10 bg-indigo-600 rounded-bl-2xl flex items-center justify-center text-white shadow-xl">
+                            <Check className="w-5 h-5 stroke-[3]" />
+                          </div>
+                       )}
+                      <div className="font-extrabold text-lg tracking-tight mb-0.5">{tier.name}</div>
+                      <div className="text-xs text-slate-500 font-medium">{tier.desc}</div>
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Right: Sticky Summary Card */}
-            <div className="lg:col-span-5 sticky top-24">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
-                <div className="border-b border-slate-800 pb-4">
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Live Cost Summary</span>
-                  <div className="flex items-baseline gap-1 mt-2">
-                    <span className="text-4xl font-black text-white">£{calculateTotal().toLocaleString()}</span>
-                    <span className="text-sm text-slate-400">GBP (excl. VAT)</span>
+            {/* Right: Sticky Premium Summary Snapshot */}
+            <div className="sticky top-32 z-30">
+              <div className="bg-[#0c1018] border-2 border-indigo-800/40 rounded-3xl p-8 shadow-2xl shadow-indigo-950/30 space-y-7 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-full blur-[70px] opacity-20"></div>
+                
+                <div className="border-b border-white/[0.04] pb-6 relative z-10">
+                  <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-2">Agency Price Snapshot</div>
+                  <div className="flex items-baseline gap-1 mt-3">
+                    <span className="text-6xl font-black text-white tracking-tighter">£{calculateTotal().toLocaleString()}</span>
+                    <span className="text-sm font-semibold text-slate-400 bg-[#121826] px-3 py-1 rounded-full border border-white/5">GBP</span>
                   </div>
+                  <div className="text-xs text-slate-600 mt-2">Guaranteed setup cost (excluding mandatory VAT). 30-day price lock.</div>
                 </div>
 
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between text-slate-300">
-                    <span>Base Architecture ({selectedService.name})</span>
-                    <span className="font-semibold">£{selectedService.basePrice}</span>
+                <div className="space-y-4 text-sm relative z-10">
+                  <div className="flex justify-between items-center text-slate-300">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-slate-600"/> Base Build ({selectedService.name})
+                    </div>
+                    <span className="font-bold text-white">£{selectedService.basePrice}</span>
                   </div>
-                  <div className="flex justify-between text-slate-300">
-                    <span>{scopeUnits} × {selectedService.unitLabel}</span>
-                    <span className="font-semibold">£{scopeUnits * selectedService.unitPrice}</span>
+                  <div className="flex justify-between items-center text-slate-300">
+                    <div className="flex items-center gap-2">
+                       <Zap className="w-4 h-4 text-slate-600" /> Setup for {scopeUnits} {selectedService.unitLabel}
+                    </div>
+                    <span className="font-bold text-white">£{(scopeUnits * selectedService.unitPrice).toLocaleString()}</span>
                   </div>
                   {selectedAddons.length > 0 && (
-                    <div className="flex justify-between text-slate-300">
-                      <span>Module Integrations ({selectedAddons.length})</span>
-                      <span className="font-semibold">
-                        +£{selectedAddons.reduce((a, id) => a + (ADDON_OPTIONS.find(o => o.id === id)?.price || 0), 0)}
+                    <div className="flex justify-between items-center text-slate-300">
+                      <div className="flex items-center gap-2">
+                         <ShieldCheck className="w-4 h-4 text-slate-600" /> Premium Integrations ({selectedAddons.length})
+                      </div>
+                      <span className="font-bold text-white">
+                        +£{selectedAddons.reduce((a, id) => a + (ADDON_OPTIONS.find(o => o.id === id)?.price || 0), 0).toLocaleString()}
                       </span>
                     </div>
                   )}
                   {selectedTier.multiplier > 1 && (
-                    <div className="flex justify-between text-amber-400 text-xs font-semibold pt-1 border-t border-slate-800">
-                      <span>Express Delivery Speed</span>
-                      <span>+30%</span>
+                    <div className="flex justify-between text-amber-300 text-xs font-bold pt-2 border-t border-white/[0.04]">
+                      <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Express Launch Surcharge</div>
+                      <span>+30% Delivery Fee</span>
                     </div>
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-slate-800">
+                <div className="pt-6 border-t border-white/[0.04] relative z-10">
                   <button
                     onClick={() => setIsModalOpen(true)}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 group"
+                    className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-black py-4.5 px-6 rounded-2xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2.5 group active:scale-[0.98]"
                   >
-                    Lock In Quote & Request Proposal
-                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    Generate Final Proposal
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1.5 transition-transform" />
                   </button>
+                  <p className="text-center text-xs text-slate-600 mt-4 font-medium">Instantly receive a comprehensive PDF contract request.</p>
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          /* Admin Lead Pipeline */
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-extrabold tracking-tight text-white">
-                  Lead Intake & Quote Pipeline
-                </h1>
-                <p className="text-slate-400 mt-1 text-sm">
-                  Track incoming business quotes, review client project specs, and update conversion status.
-                </p>
-              </div>
-              <button
-                onClick={seedDemoQuotes}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all"
-              >
-                Seed Demo Lead Data
-              </button>
-            </div>
-
-            {/* Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Active Leads</span>
-                <div className="text-3xl font-black text-white mt-2">{quotes.length}</div>
-              </div>
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pipeline Forecast</span>
-                <div className="text-3xl font-black text-indigo-400 mt-2">£{totalPipelineValue.toLocaleString()}</div>
-              </div>
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Average Deal Size</span>
-                <div className="text-3xl font-black text-emerald-400 mt-2">
-                  £{quotes.length ? Math.round(totalPipelineValue / quotes.length).toLocaleString() : 0}
+          /* High-End Agency Admin Dashboard */
+          <div className="space-y-10">
+            <div className="max-w-3xl">
+                <div className="flex items-center gap-3 text-emerald-400 mb-2">
+                   <LayoutDashboard className="w-5 h-5" />
+                   <span className="font-semibold tracking-wide uppercase text-sm">Lumpacha CRM Database v1.4</span>
                 </div>
-              </div>
+                <h1 className="text-5xl font-black tracking-tighter text-white leading-[0.95]">
+                  Active <span className="text-emerald-400">Prospect</span> Pipeline
+                </h1>
+                <p className="text-lg text-slate-400 mt-4 leading-relaxed">
+                  Analyze high-value incoming inquiries generated via the QuotePulse estimator. Track project value, client commitment, and manage outreach workflow.
+                </p>
             </div>
 
-            {/* Filter Bar */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              <span className="text-xs font-bold text-slate-400 uppercase mr-2 flex items-center gap-1">
-                <Filter className="h-3.5 w-3.5" /> Filter:
-              </span>
+            {/* Modern Metrics Display */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {[
+                { title: 'Total Opportunities', value: quotes.length, color: 'white' },
+                { title: 'Pipeline Forecast', value: `£${totalPipelineValue.toLocaleString()}`, color: 'indigo-400' },
+                { title: 'Avg Opportunity Size', value: `£${quotes.length ? Math.round(totalPipelineValue / quotes.length).toLocaleString() : 0}`, color: 'emerald-400' }
+              ].map(metric => (
+                  <div key={metric.title} className="bg-[#0c1018] border border-white/[0.04] rounded-3xl p-6 shadow-inner-dark relative overflow-hidden">
+                      <div className="absolute top-[-10px] right-[-10px] w-20 h-20 bg-gradient-to-tr from-white/10 to-transparent rounded-full blur-xl opacity-20"></div>
+                      <span className="text-sm font-bold text-slate-500 uppercase tracking-wide">{metric.title}</span>
+                      <div className={`text-4xl font-black text-${metric.color} mt-3 tracking-tighter`}>{metric.value}</div>
+                  </div>
+              ))}
+            </div>
+
+            {/* Filter segmented control */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 p-1.5 bg-[#0e121a] rounded-full border border-white/[0.04] max-w-2xl">
               {['All', 'New', 'Contacted', 'Proposal Sent', 'Won', 'Lost'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
-                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
+                  className={`text-xs font-bold px-5 py-2.5 rounded-full border transition-all whitespace-nowrap ${
                     filterStatus === status
-                      ? 'bg-indigo-600 border-indigo-500 text-white'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800'
+                      ? 'bg-[#151b29] border-white/5 text-white shadow-xl'
+                      : 'border-transparent text-slate-400 hover:text-slate-100'
                   }`}
                 >
                   {status}
@@ -497,62 +495,67 @@ export default function App() {
               ))}
             </div>
 
-            {/* Pipeline Table */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            {/* Sophisticated Pipeline Table */}
+            <div className="bg-[#0c1018] border border-white/[0.04] rounded-3xl overflow-hidden shadow-2xl shadow-black/30">
               {loadingQuotes ? (
-                <div className="p-12 text-center text-slate-500">Loading lead database...</div>
+                <div className="p-16 text-center text-slate-500 font-medium">Accessing agency database pipeline...</div>
               ) : filteredQuotes.length === 0 ? (
-                <div className="p-12 text-center text-slate-500">No quotes match the selected filter.</div>
+                <div className="p-16 text-center text-slate-500 font-medium">No leads match the active filter criteria. Submit a test quote!</div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left border-collapse min-w-[1000px]">
                     <thead>
-                      <tr className="border-b border-slate-800 bg-slate-950/50 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                        <th className="p-4">Client Contact</th>
-                        <th className="p-4">Requested System</th>
-                        <th className="p-4">Est. Value</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4">Action</th>
+                      <tr className="border-b border-white/[0.03] bg-[#0e121a] text-slate-500 text-xs font-extrabold uppercase tracking-widest">
+                        <th className="p-5">Client Prospect</th>
+                        <th className="p-5">Project Scope</th>
+                        <th className="p-5">Value (GBP)</th>
+                        <th className="p-5">Current Status</th>
+                        <th className="p-5">Pipeline Management</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60 text-sm">
+                    <tbody className="divide-y divide-white/[0.02] text-sm font-medium">
                       {filteredQuotes.map((q) => (
-                        <tr key={q.id} className="hover:bg-slate-800/30 transition-colors">
-                          <td className="p-4">
-                            <div className="font-semibold text-white">{q.client_name}</div>
-                            <div className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                        <tr key={q.id} className="hover:bg-[#121826]/30 transition-colors">
+                          <td className="p-5">
+                            <div className="font-extrabold text-white text-base tracking-tight">{q.client_name}</div>
+                            <div className="text-xs text-slate-400 flex items-center gap-2.5 mt-1 font-mono">
                               <span>{q.client_email}</span>
                               {q.client_phone && <span>• {q.client_phone}</span>}
                             </div>
                           </td>
-                          <td className="p-4">
-                            <div className="text-slate-200 font-medium">{q.service_type}</div>
-                            <div className="text-xs text-slate-500">{q.tier} ({q.scope_units} units)</div>
+                          <td className="p-5">
+                            <div className="text-slate-100">{q.service_type}</div>
+                            <div className="text-xs text-slate-500">{q.tier} / {q.scope_units} Units</div>
                           </td>
-                          <td className="p-4 font-bold text-white">
+                          <td className="p-5 font-black text-white text-base tracking-tight">
                             £{Number(q.estimated_price).toLocaleString()}
                           </td>
-                          <td className="p-4">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
+                          <td className="p-5">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
                               q.status === 'New' ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' :
                               q.status === 'Contacted' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' :
                               q.status === 'Won' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
                               'bg-slate-800 border-slate-700 text-slate-400'
                             }`}>
+                              <span className={`w-2 h-2 rounded-full ${
+                                 q.status === 'New' ? 'bg-indigo-400' :
+                                 q.status === 'Contacted' ? 'bg-amber-400' :
+                                 q.status === 'Won' ? 'bg-emerald-400' : 'bg-slate-500'
+                              }`}></span>
                               {q.status}
                             </span>
                           </td>
-                          <td className="p-4">
+                          <td className="p-5">
                             <select
                               value={q.status}
                               onChange={(e) => updateQuoteStatus(q.id, e.target.value as Quote['status'])}
-                              className="bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-lg p-2 font-medium focus:border-indigo-500 outline-none"
+                              className="bg-[#121826] border border-white/5 text-xs text-slate-300 rounded-xl p-2.5 font-bold focus:border-indigo-500 outline-none hover:border-white/10"
                             >
-                              <option value="New">Mark New</option>
-                              <option value="Contacted">Mark Contacted</option>
-                              <option value="Proposal Sent">Mark Proposal Sent</option>
-                              <option value="Won">Mark Won</option>
-                              <option value="Lost">Mark Lost</option>
+                              <option value="New">Set to: New Inquiry</option>
+                              <option value="Contacted">Set to: Initial Outreach</option>
+                              <option value="Proposal Sent">Set to: Proposal Delivered</option>
+                              <option value="Won">Set to: Closed (Won)</option>
+                              <option value="Lost">Set to: Closed (Lost)</option>
                             </select>
                           </td>
                         </tr>
@@ -566,87 +569,96 @@ export default function App() {
         )}
       </main>
 
-      {/* Submission Modal */}
+      {/* Modern Intake Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative">
+        <div className="fixed inset-0 bg-[#07090e]/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-[#0c1018] border border-white/[0.04] rounded-3xl p-10 max-w-lg w-full shadow-2xl relative overflow-hidden">
+             <div className="absolute top-[-10px] left-[-10px] w-32 h-32 bg-gradient-to-br from-indigo-500/30 to-transparent rounded-full blur-2xl opacity-40"></div>
+             
             {submitSuccess ? (
-              <div className="text-center py-8 space-y-4">
-                <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/30">
-                  <CheckCircle2 className="h-8 w-8" />
+              <div className="text-center py-10 space-y-6 relative z-10">
+                <div className="w-20 h-20 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-500/20 shadow-inner">
+                  <CheckCircle2 className="h-10 w-10 stroke-[3]" />
                 </div>
-                <h3 className="text-2xl font-bold text-white">Proposal Request Logged!</h3>
-                <p className="text-slate-400 text-sm">
-                  Your quote for <strong className="text-white">£{calculateTotal().toLocaleString()}</strong> has been captured into the pipeline.
+                <h3 className="text-3xl font-black text-white tracking-tighter">Inquiry Registered!</h3>
+                <p className="text-slate-400 leading-relaxed">
+                  Your guaranteed Lumpacha Creative estimate for <strong className="text-white text-lg font-bold">£{calculateTotal().toLocaleString()}</strong> has been captured. Our team will generate your comprehensive PDF contract proposal shortly.
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmitQuote} className="space-y-4">
+              <form onSubmit={handleSubmitQuote} className="space-y-6 relative z-10">
                 <div>
-                  <h3 className="text-xl font-bold text-white">Submit Quote Request</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Enter details to lock in your £{calculateTotal().toLocaleString()} estimate for 30 days.
+                   <div className="flex items-center gap-2.5 text-indigo-400 mb-2">
+                     <Calculator className="w-5 h-5"/>
+                     <span className="font-semibold uppercase text-xs tracking-wide">Finalize Intake</span>
+                   </div>
+                  <h3 className="text-3xl font-black text-white tracking-tighter">Contract Proposal Request</h3>
+                  <p className="text-sm text-slate-400 mt-2">
+                    Submit contact details to register this £{calculateTotal().toLocaleString()} setup fee. A full specifications contract will be delivered to the email address provided.
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Full Name</label>
-                  <div className="relative">
-                    <User className="h-4 w-4 absolute left-3 top-3 text-slate-500" />
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Dr. John Smith"
-                      value={clientName}
-                      onChange={(e) => setClientName(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-indigo-500 outline-none"
-                    />
+                <div className="space-y-4 pt-4 border-t border-white/[0.04]">
+                  <div>
+                    <label className="block text-xs font-extrabold uppercase text-slate-500 tracking-wider mb-2">Primary Contact Name</label>
+                    <div className="relative">
+                      <User className="h-5 w-5 absolute left-4 top-3.5 text-slate-600" />
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Dr. John Vance"
+                        value={clientName}
+                        onChange={(e) => setClientName(e.target.value)}
+                        className="w-full bg-[#121826] border border-white/[0.04] rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium text-white focus:border-indigo-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold uppercase text-slate-500 tracking-wider mb-2">Business Email Address</label>
+                    <div className="relative">
+                      <Mail className="h-5 w-5 absolute left-4 top-3.5 text-slate-600" />
+                      <input
+                        type="email"
+                        required
+                        placeholder="email@organization.co.uk"
+                        value={clientEmail}
+                        onChange={(e) => setClientEmail(e.target.value)}
+                        className="w-full bg-[#121826] border border-white/[0.04] rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium text-white focus:border-indigo-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold uppercase text-slate-500 tracking-wider mb-2">Phone (Optional Direct Line)</label>
+                    <div className="relative">
+                      <Phone className="h-5 w-5 absolute left-4 top-3.5 text-slate-600" />
+                      <input
+                        type="tel"
+                        placeholder="+44 20 7946 0912"
+                        value={clientPhone}
+                        onChange={(e) => setClientPhone(e.target.value)}
+                        className="w-full bg-[#121826] border border-white/[0.04] rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium text-white focus:border-indigo-500 outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Business Email</label>
-                  <div className="relative">
-                    <Mail className="h-4 w-4 absolute left-3 top-3 text-slate-500" />
-                    <input
-                      type="email"
-                      required
-                      placeholder="john@clinic.co.uk"
-                      value={clientEmail}
-                      onChange={(e) => setClientEmail(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-indigo-500 outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Phone Number (Optional)</label>
-                  <div className="relative">
-                    <Phone className="h-4 w-4 absolute left-3 top-3 text-slate-500" />
-                    <input
-                      type="tel"
-                      placeholder="+44 20 7946 0912"
-                      value={clientPhone}
-                      onChange={(e) => setClientPhone(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-indigo-500 outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-4 pt-6 border-t border-white/[0.04]">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all"
+                    className="w-1/2 bg-[#121826] hover:bg-[#182033] border border-white/5 text-slate-300 text-sm font-bold py-3.5 rounded-2xl transition-all"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-1/2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 transition-all"
+                    className="w-1/2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    {submitting ? 'Submitting...' : 'Submit Request'}
+                    {submitting ? 'Registering Inquiry...' : 'Submit Spec Sheet'}
+                    <Zap className="w-4 h-4" />
                   </button>
                 </div>
               </form>

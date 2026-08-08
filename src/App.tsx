@@ -16,9 +16,9 @@ import {
   Briefcase
 } from 'lucide-react';
 
-// Initialize Supabase Client using Vite environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Initialize Supabase Client with direct fallback credentials to prevent startup crashes
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zrcdlgbcoswfuhfmmasg.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_vDUe8iihMX82M8yD9wXP2A_BvWZsYpB';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface Quote {

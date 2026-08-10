@@ -50,6 +50,14 @@ interface Quote {
   status: 'New' | 'Contacted' | 'Proposal Sent' | 'Won' | 'Lost';
 }
 
+type Currency = 'GBP' | 'USD' | 'EUR';
+
+const CURRENCIES: Record<Currency, { symbol: string; rate: number; label: string }> = {
+  GBP: { symbol: '£', rate: 1.0, label: 'GBP (£)' },
+  USD: { symbol: '$', rate: 1.35, label: 'USD ($)' },
+  EUR: { symbol: '€', rate: 1.17, label: 'EUR (€)' }
+};
+
 const SERVICE_OPTIONS = [
   { id: 'clinic-setup', name: 'Clinical Flow System', icon: Target, basePrice: 450, unitLabel: 'Treatment Rooms', unitPrice: 75, desc: 'Setup optimization & patient throughput management for medical practices.' },
   { id: 'custom-booking', name: 'Queue & Engine Engine', icon: Users, basePrice: 350, unitLabel: 'Staff Members', unitPrice: 50, desc: 'Advanced multi-provider booking platform with logic-based queuing.' },
@@ -69,6 +77,7 @@ const ADDON_OPTIONS = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'calculator' | 'admin'>('calculator');
+  const [currency, setCurrency] = useState<Currency>('GBP');
   
   // Calculator Form State
   const [selectedService, setSelectedService] = useState(SERVICE_OPTIONS[0]);
@@ -111,6 +120,13 @@ export default function App() {
     } finally {
       setLoadingQuotes(false);
     }
+  };
+
+  const currInfo = CURRENCIES[currency];
+
+  const formatPrice = (gbpAmount: number) => {
+    const converted = Math.round(gbpAmount * currInfo.rate);
+    return `${currInfo.symbol}${converted.toLocaleString()}`;
   };
 
   const calculateTotal = () => {
@@ -195,11 +211,11 @@ export default function App() {
   const estimatedRps = scopeUnits * 140;
 
   // Business ROI Calculations (Extension #2)
-  const totalQuoteCost = calculateTotal();
+  const totalQuoteCostGBP = calculateTotal();
   const estimatedHoursSavedWeekly = Math.round(scopeUnits * 3.5) + (selectedService.id === 'workflow-auto' ? 8 : 4);
-  const hourlyLaborCostGBP = 30; // £30/hr standard operational labor cost
+  const hourlyLaborCostGBP = 30; 
   const annualSavingsGBP = estimatedHoursSavedWeekly * 52 * hourlyLaborCostGBP;
-  const paybackMonths = annualSavingsGBP > 0 ? (totalQuoteCost / (annualSavingsGBP / 12)).toFixed(1) : '1.0';
+  const paybackMonths = annualSavingsGBP > 0 ? (totalQuoteCostGBP / (annualSavingsGBP / 12)).toFixed(1) : '1.0';
   const processEfficiencyGain = Math.min(88, 30 + scopeUnits * 4);
 
   return (
@@ -221,8 +237,8 @@ export default function App() {
               <span className="text-2xl font-black tracking-tight bg-gradient-to-br from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
                 QuotePulse
               </span>
-              <span className="ml-2 text-xs font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
-                UK (£)
+              <span className="ml-2 text-xs font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">
+                {currency} ({currInfo.symbol})
               </span>
             </div>
           </div>
@@ -247,9 +263,32 @@ export default function App() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
-             <div className="text-sm font-medium text-slate-500">Lampacho Creative Org</div>
-             <img src={`https://api.dicebear.com/8.x/initials/svg?seed=Stuart`} className="w-9 h-9 rounded-full border border-white/10" alt="Stuart" />
+          <div className="flex items-center gap-4">
+             {/* EXTENSION #3: Multi-Currency Converter Switcher */}
+             <div className="flex items-center gap-1 bg-[#0e121a] p-1 rounded-2xl border border-white/[0.04]">
+                <Globe className="w-4 h-4 text-indigo-400 ml-2" />
+                {(['GBP', 'USD', 'EUR'] as Currency[]).map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCurrency(c)}
+                    className={`px-3 py-1.5 text-xs font-black rounded-xl transition-all ${
+                      currency === c 
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
+                        : 'text-slate-400 hover:text-white hover:bg-[#121826]'
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+             </div>
+
+             <div className="hidden md:flex items-center gap-3 pl-3 border-l border-white/[0.06]">
+                <div className="text-right">
+                  <div className="text-xs font-extrabold text-white">Lampacho Creative</div>
+                  <div className="text-[10px] text-emerald-400 font-bold">● Enterprise Verified</div>
+                </div>
+                <img src={`https://api.dicebear.com/8.x/initials/svg?seed=Stuart`} className="w-9 h-9 rounded-full border border-white/10" alt="Stuart" />
+             </div>
           </div>
         </div>
       </header>
@@ -287,7 +326,7 @@ export default function App() {
                       <button
                         key={service.id}
                         onClick={() => setSelectedService(service)}
-                        className={`group p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden ${
+                        className={`group p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden text-left ${
                           isSelected
                             ? 'border-indigo-600 bg-gradient-to-b from-indigo-950/50 to-transparent text-white ring-2 ring-indigo-500/50 shadow-2xl'
                             : 'border-white/[0.04] bg-[#0e121a]/50 text-slate-300 hover:border-indigo-800/40 hover:bg-[#121826]'
@@ -306,9 +345,9 @@ export default function App() {
                         <h3 className="font-extrabold text-lg tracking-tight mb-1">{service.name}</h3>
                         <p className="text-xs text-slate-400 leading-relaxed mb-4">{service.desc}</p>
                         <div className={`text-xs p-3 rounded-lg border transition-colors ${isSelected ? 'bg-indigo-900/30 border-indigo-700' : 'bg-[#121826] border-white/[0.03]'}`}>
-                          <span className="font-bold text-white">Setup £{service.basePrice}</span>
+                          <span className="font-bold text-white">Setup {formatPrice(service.basePrice)}</span>
                           <span className="text-slate-500 mx-1">•</span>
-                          <span className="text-slate-400">+£{service.unitPrice}/{service.unitLabel.slice(0, -1)}</span>
+                          <span className="text-slate-400">+{formatPrice(service.unitPrice)}/{service.unitLabel.slice(0, -1)}</span>
                         </div>
                       </button>
                     );
@@ -376,7 +415,7 @@ export default function App() {
                             </div>
                             <span className={`text-sm font-medium ${isChecked ? 'text-indigo-50' : 'text-slate-300'}`}>{addon.name}</span>
                           </div>
-                          <span className={`text-sm font-bold ${isChecked ? 'text-white' : 'text-indigo-400'}`}>+£{addon.price}</span>
+                          <span className={`text-sm font-bold ${isChecked ? 'text-white' : 'text-indigo-400'}`}>+{formatPrice(addon.price)}</span>
                         </div>
                       );
                     })}
@@ -568,13 +607,13 @@ export default function App() {
                       <div className="bg-emerald-600 p-2.5 rounded-xl text-white shadow-lg shadow-emerald-600/30">
                         <Coins className="w-5 h-5" />
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Annual Return</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Annual Return ({currency})</span>
                     </div>
                     <div className="text-3xl font-black text-emerald-400 tracking-tight">
-                      £{annualSavingsGBP.toLocaleString()}
+                      {formatPrice(annualSavingsGBP)}
                     </div>
                     <div className="text-xs text-emerald-200/70 mt-2 leading-relaxed">
-                      Estimated yearly operational cost savings at baseline £30/hr labor rates.
+                      Estimated yearly operational cost savings at baseline baseline rates.
                     </div>
                   </div>
 
@@ -634,8 +673,12 @@ export default function App() {
                 <div className="border-b border-white/[0.04] pb-6 relative z-10">
                   <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-2">Agency Price Snapshot</div>
                   <div className="flex items-baseline gap-1 mt-3">
-                    <span className="text-6xl font-black text-white tracking-tighter">£{calculateTotal().toLocaleString()}</span>
-                    <span className="text-sm font-semibold text-slate-400 bg-[#121826] px-3 py-1 rounded-full border border-white/5">GBP</span>
+                    <span className="text-6xl font-black text-white tracking-tighter">
+                      {formatPrice(calculateTotal())}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-400 bg-[#121826] px-3 py-1 rounded-full border border-white/5">
+                      {currency}
+                    </span>
                   </div>
                   <div className="text-xs text-slate-600 mt-2">Guaranteed setup cost (excluding mandatory VAT). 30-day price lock.</div>
                 </div>
@@ -645,13 +688,13 @@ export default function App() {
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4 text-slate-600"/> Base Build ({selectedService.name})
                     </div>
-                    <span className="font-bold text-white">£{selectedService.basePrice}</span>
+                    <span className="font-bold text-white">{formatPrice(selectedService.basePrice)}</span>
                   </div>
                   <div className="flex justify-between items-center text-slate-300">
                     <div className="flex items-center gap-2">
                        <Zap className="w-4 h-4 text-slate-600" /> Setup for {scopeUnits} {selectedService.unitLabel}
                     </div>
-                    <span className="font-bold text-white">£{(scopeUnits * selectedService.unitPrice).toLocaleString()}</span>
+                    <span className="font-bold text-white">{formatPrice(scopeUnits * selectedService.unitPrice)}</span>
                   </div>
                   {selectedAddons.length > 0 && (
                     <div className="flex justify-between items-center text-slate-300">
@@ -659,7 +702,7 @@ export default function App() {
                          <ShieldCheck className="w-4 h-4 text-slate-600" /> Premium Integrations ({selectedAddons.length})
                       </div>
                       <span className="font-bold text-white">
-                        +£{selectedAddons.reduce((a, id) => a + (ADDON_OPTIONS.find(o => o.id === id)?.price || 0), 0).toLocaleString()}
+                        +{formatPrice(selectedAddons.reduce((a, id) => a + (ADDON_OPTIONS.find(o => o.id === id)?.price || 0), 0))}
                       </span>
                     </div>
                   )}
@@ -704,8 +747,8 @@ export default function App() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               {[
                 { title: 'Total Opportunities', value: quotes.length, color: 'white' },
-                { title: 'Pipeline Forecast', value: `£${totalPipelineValue.toLocaleString()}`, color: 'indigo-400' },
-                { title: 'Avg Opportunity Size', value: `£${quotes.length ? Math.round(totalPipelineValue / quotes.length).toLocaleString() : 0}`, color: 'emerald-400' }
+                { title: 'Pipeline Forecast', value: formatPrice(totalPipelineValue), color: 'indigo-400' },
+                { title: 'Avg Opportunity Size', value: formatPrice(quotes.length ? Math.round(totalPipelineValue / quotes.length) : 0), color: 'emerald-400' }
               ].map(metric => (
                   <div key={metric.title} className="bg-[#0c1018] border border-white/[0.04] rounded-3xl p-6 shadow-inner-dark relative overflow-hidden">
                       <div className="absolute top-[-10px] right-[-10px] w-20 h-20 bg-gradient-to-tr from-white/10 to-transparent rounded-full blur-xl opacity-20"></div>
@@ -745,7 +788,7 @@ export default function App() {
                       <tr className="border-b border-white/[0.03] bg-[#0e121a] text-slate-500 text-xs font-extrabold uppercase tracking-widest">
                         <th className="p-5">Client Prospect</th>
                         <th className="p-5">Project Scope</th>
-                        <th className="p-5">Value (GBP)</th>
+                        <th className="p-5">Value ({currency})</th>
                         <th className="p-5">Current Status</th>
                         <th className="p-5">Pipeline Management</th>
                       </tr>
@@ -765,7 +808,7 @@ export default function App() {
                             <div className="text-xs text-slate-500">{q.tier} / {q.scope_units} Units</div>
                           </td>
                           <td className="p-5 font-black text-white text-base tracking-tight">
-                            £{Number(q.estimated_price).toLocaleString()}
+                            {formatPrice(Number(q.estimated_price))}
                           </td>
                           <td className="p-5">
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
@@ -819,7 +862,7 @@ export default function App() {
                 </div>
                 <h3 className="text-3xl font-black text-white tracking-tighter">Inquiry Registered!</h3>
                 <p className="text-slate-400 leading-relaxed">
-                  Your guaranteed Lampacho Creative estimate for <strong className="text-white text-lg font-bold">£{calculateTotal().toLocaleString()}</strong> has been captured. Our team will generate your comprehensive PDF contract proposal shortly.
+                  Your guaranteed Lampacho Creative estimate for <strong className="text-white text-lg font-bold">{formatPrice(calculateTotal())}</strong> has been captured. Our team will generate your comprehensive PDF contract proposal shortly.
                 </p>
               </div>
             ) : (
@@ -831,7 +874,7 @@ export default function App() {
                    </div>
                   <h3 className="text-3xl font-black text-white tracking-tighter">Contract Proposal Request</h3>
                   <p className="text-sm text-slate-400 mt-2">
-                    Submit contact details to register this £{calculateTotal().toLocaleString()} setup fee. A full specifications contract will be delivered to the email address provided.
+                    Submit contact details to register this {formatPrice(calculateTotal())} setup fee. A full specifications contract will be delivered to the email address provided.
                   </p>
                 </div>
 

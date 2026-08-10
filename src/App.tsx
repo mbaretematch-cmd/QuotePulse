@@ -30,7 +30,9 @@ import {
   Coins,
   BarChart3,
   Tag,
-  Gift
+  Gift,
+  Printer,
+  FileText
 } from 'lucide-react';
 
 // Initialize Supabase Client
@@ -174,6 +176,11 @@ export default function App() {
     );
   };
 
+  // Extension #5 Handler: Print Executive Spec Sheet
+  const handlePrintProposal = () => {
+    window.print();
+  };
+
   const handleSubmitQuote = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -246,15 +253,121 @@ export default function App() {
   const processEfficiencyGain = Math.min(88, 30 + scopeUnits * 4);
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#07090e] text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white print:bg-white print:text-black">
       {/* Dynamic Glow Background Layer */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none print:hidden">
         <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-indigo-950/30 rounded-full blur-[160px] opacity-70"></div>
         <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-violet-950/20 rounded-full blur-[130px] opacity-60"></div>
       </div>
 
+      {/* EXTENSION #5: PRINT-ONLY EXECUTIVE B2B CONTRACT SPEC SHEET */}
+      <div className="hidden print:block p-8 font-sans max-w-4xl mx-auto text-black bg-white">
+        <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-6">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900">Lampacho Creative</h1>
+            <p className="text-sm font-semibold text-slate-600">Enterprise Systems Architecture & B2B Solutions</p>
+          </div>
+          <div className="text-right">
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Official Specification</span>
+            <div className="text-lg font-black text-slate-900">REF-{Math.floor(100000 + Math.random() * 900000)}</div>
+            <div className="text-xs text-slate-600">Date: {new Date().toLocaleDateString('en-GB')}</div>
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-xl font-extrabold text-slate-900 mb-2">Project Specification: {selectedService.name}</h2>
+          <p className="text-sm text-slate-700 leading-relaxed">{selectedService.desc}</p>
+        </div>
+
+        {/* Scope Line Items Table */}
+        <table className="w-full text-left border-collapse mb-8 text-sm">
+          <thead>
+            <tr className="border-b-2 border-slate-900 text-slate-900 font-extrabold uppercase text-xs">
+              <th className="py-2">Deliverable Component</th>
+              <th className="py-2">Configuration Detail</th>
+              <th className="py-2 text-right">Price ({currency})</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            <tr>
+              <td className="py-3 font-bold text-slate-900">Core Architecture Setup</td>
+              <td className="py-3 text-slate-700">{selectedService.name} Base Build</td>
+              <td className="py-3 text-right font-bold text-slate-900">{formatPrice(selectedService.basePrice)}</td>
+            </tr>
+            <tr>
+              <td className="py-3 font-bold text-slate-900">Operational Capacity Units</td>
+              <td className="py-3 text-slate-700">{scopeUnits} × {selectedService.unitLabel}</td>
+              <td className="py-3 text-right font-bold text-slate-900">{formatPrice(scopeUnits * selectedService.unitPrice)}</td>
+            </tr>
+            {selectedAddons.map(addonId => {
+              const addon = ADDON_OPTIONS.find(a => a.id === addonId);
+              return addon ? (
+                <tr key={addon.id}>
+                  <td className="py-3 font-bold text-slate-900">Ecosystem Module</td>
+                  <td className="py-3 text-slate-700">{addon.name}</td>
+                  <td className="py-3 text-right font-bold text-slate-900">+{formatPrice(addon.price)}</td>
+                </tr>
+              ) : null;
+            })}
+            {selectedTier.multiplier > 1 && (
+              <tr>
+                <td className="py-3 font-bold text-slate-900">Deployment Speed</td>
+                <td className="py-3 text-slate-700">Priority Express 48hr Sprint (+30%)</td>
+                <td className="py-3 text-right font-bold text-slate-900">+30% Fee</td>
+              </tr>
+            )}
+            {appliedDiscount > 0 && (
+              <tr>
+                <td className="py-3 font-bold text-emerald-700">Partner Discount</td>
+                <td className="py-3 text-emerald-700">Applied Discount Code</td>
+                <td className="py-3 text-right font-bold text-emerald-700">-{appliedDiscount * 100}%</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+
+        {/* Total Box */}
+        <div className="flex justify-between items-center bg-slate-100 p-6 rounded-2xl border-2 border-slate-900 mb-8">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-widest text-slate-600">Guaranteed Fixed Fee</div>
+            <div className="text-xs text-slate-500">Includes 30-day scope & pricing freeze</div>
+          </div>
+          <div className="text-4xl font-black text-slate-900">
+            {formatPrice(calculateTotal())} <span className="text-sm font-bold text-slate-600">{currency}</span>
+          </div>
+        </div>
+
+        {/* Business Impact Summary */}
+        <div className="grid grid-cols-3 gap-4 p-4 border border-slate-300 rounded-xl mb-12 text-center text-xs">
+          <div>
+            <div className="text-slate-500 uppercase font-bold">Weekly Hours Saved</div>
+            <div className="text-lg font-black text-slate-900 mt-1">~{estimatedHoursSavedWeekly} hrs/wk</div>
+          </div>
+          <div>
+            <div className="text-slate-500 uppercase font-bold">Projected Annual Return</div>
+            <div className="text-lg font-black text-slate-900 mt-1">{formatPrice(annualSavingsGBP)}</div>
+          </div>
+          <div>
+            <div className="text-slate-500 uppercase font-bold">Capital Recovery</div>
+            <div className="text-lg font-black text-slate-900 mt-1">{paybackMonths} Months</div>
+          </div>
+        </div>
+
+        {/* Signatures */}
+        <div className="pt-12 border-t-2 border-slate-300 grid grid-cols-2 gap-12 text-xs">
+          <div>
+            <div className="font-bold text-slate-900 mb-8">Authorized Lampacho Representative:</div>
+            <div className="border-b border-slate-900 pb-1 text-slate-500">Stuart (Technical Director)</div>
+          </div>
+          <div>
+            <div className="font-bold text-slate-900 mb-8">Client Authorization Signature:</div>
+            <div className="border-b border-slate-900 pb-1 text-slate-400">Sign & Date</div>
+          </div>
+        </div>
+      </div>
+
       {/* Modern SaaS Navigation */}
-      <header className="sticky top-0 z-50 bg-[#07090e]/70 backdrop-blur-xl border-b border-white/[0.03]">
+      <header className="sticky top-0 z-50 bg-[#07090e]/70 backdrop-blur-xl border-b border-white/[0.03] print:hidden">
         <div className="max-w-[1500px] mx-auto px-6 lg:px-10 h-18 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="bg-gradient-to-tr from-indigo-500 to-violet-500 p-2.5 rounded-2xl text-white shadow-xl shadow-indigo-500/10">
@@ -321,7 +434,7 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="max-w-[1500px] mx-auto px-6 lg:px-10 py-10">
+      <main className="max-w-[1500px] mx-auto px-6 lg:px-10 py-10 print:hidden">
         {activeTab === 'calculator' ? (
           <div className="grid grid-cols-1 xl:grid-cols-[1fr,460px] gap-12 items-start">
             
@@ -698,7 +811,18 @@ export default function App() {
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-full blur-[70px] opacity-20"></div>
                 
                 <div className="border-b border-white/[0.04] pb-6 relative z-10">
-                  <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-2">Agency Price Snapshot</div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-bold uppercase tracking-wider text-slate-500">Agency Price Snapshot</span>
+                    {/* EXTENSION #5: Print PDF Trigger Button */}
+                    <button 
+                      onClick={handlePrintProposal}
+                      className="inline-flex items-center gap-1.5 text-xs font-extrabold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-lg transition-colors"
+                      title="Print Executive Spec Sheet / Save to PDF"
+                    >
+                      <Printer className="w-3.5 h-3.5" /> Print PDF
+                    </button>
+                  </div>
+
                   <div className="flex items-baseline gap-1 mt-3">
                     <span className="text-6xl font-black text-white tracking-tighter">
                       {formatPrice(calculateTotal())}
@@ -914,7 +1038,7 @@ export default function App() {
 
       {/* Modern Intake Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-[#07090e]/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+        <div className="fixed inset-0 bg-[#07090e]/80 backdrop-blur-sm z-50 flex items-center justify-center p-6 print:hidden">
           <div className="bg-[#0c1018] border border-white/[0.04] rounded-3xl p-10 max-w-lg w-full shadow-2xl relative overflow-hidden">
              <div className="absolute top-[-10px] left-[-10px] w-32 h-32 bg-gradient-to-br from-indigo-500/30 to-transparent rounded-full blur-2xl opacity-40"></div>
              

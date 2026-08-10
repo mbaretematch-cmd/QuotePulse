@@ -16,7 +16,16 @@ import {
   Layers3,
   Users,
   Target,
-  Zap
+  Zap,
+  Server,
+  Database,
+  Smartphone,
+  Bell,
+  Cpu,
+  Cloud,
+  Activity,
+  Workflow,
+  Globe
 } from 'lucide-react';
 
 // Initialize Supabase Client
@@ -174,6 +183,13 @@ export default function App() {
     : quotes.filter(q => q.status === filterStatus);
 
   const totalPipelineValue = quotes.reduce((acc, q) => acc + Number(q.estimated_price), 0);
+
+  // System Topology Calculations
+  const hasSms = selectedAddons.includes('sms-notifications');
+  const hasBranding = selectedAddons.includes('branding-custom');
+  const hasSupport = selectedAddons.includes('priority-support');
+  const totalActiveNodes = 3 + (hasSms ? 1 : 0) + (hasBranding ? 1 : 0) + (hasSupport ? 1 : 0);
+  const estimatedRps = scopeUnits * 140;
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
@@ -353,6 +369,143 @@ export default function App() {
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+              </div>
+
+              {/* EXTENSION #1: Live Interactive System Blueprint Visualizer */}
+              <div className="border border-indigo-900/40 bg-gradient-to-br from-[#0c1018] via-[#090d15] to-[#0c1018] rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                {/* Visualizer Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-white/[0.04]">
+                  <div>
+                    <div className="flex items-center gap-2.5 text-indigo-400 mb-1">
+                      <Workflow className="w-5 h-5" />
+                      <span className="font-extrabold uppercase text-xs tracking-wider">Dynamic Topology Engine</span>
+                    </div>
+                    <h3 className="text-2xl font-black text-white tracking-tight">
+                      Live Architecture Blueprint Map
+                    </h3>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      {totalActiveNodes} Connected Nodes
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-mono">
+                      <Activity className="w-3.5 h-3.5" />
+                      ~{estimatedRps.toLocaleString()} req/s
+                    </span>
+                  </div>
+                </div>
+
+                {/* Topology Network Visualizer Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-stretch relative">
+                  
+                  {/* Node 1: Client Gateway */}
+                  <div className="bg-[#121826] border border-white/[0.06] rounded-2xl p-5 relative group hover:border-indigo-500/50 transition-all flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="bg-indigo-500/20 p-2 rounded-xl text-indigo-400 border border-indigo-500/30">
+                          <Smartphone className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Node 01</span>
+                      </div>
+                      <div className="text-sm font-extrabold text-white">Client Web Portal</div>
+                      <div className="text-xs text-slate-400 mt-1">React 19 + Tailwind UI</div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-white/[0.04] flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Design Tier</span>
+                      <span className={`font-bold ${hasBranding ? 'text-indigo-400' : 'text-slate-400'}`}>
+                        {hasBranding ? 'White-Labeled' : 'Standard UI'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Node 2: Core Processing Engine */}
+                  <div className="bg-gradient-to-b from-indigo-950/40 to-[#121826] border border-indigo-500/40 rounded-2xl p-5 relative group shadow-lg flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-600/30">
+                          <Server className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Core Engine</span>
+                      </div>
+                      <div className="text-sm font-extrabold text-white">{selectedService.name}</div>
+                      <div className="text-xs text-indigo-300 mt-1 font-mono">
+                        {scopeUnits} {selectedService.unitLabel}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-indigo-500/20 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400 font-medium">Compute Cluster</span>
+                      <span className="font-bold text-emerald-400 font-mono">{scopeUnits * 2} Worker Threads</span>
+                    </div>
+                  </div>
+
+                  {/* Node 3: Addon Modules Gateway */}
+                  <div className="bg-[#121826] border border-white/[0.06] rounded-2xl p-5 relative group hover:border-indigo-500/50 transition-all flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="bg-amber-500/20 p-2 rounded-xl text-amber-400 border border-amber-500/30">
+                          <Cpu className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Node 03</span>
+                      </div>
+                      <div className="text-sm font-extrabold text-white">Integration Layer</div>
+                      
+                      <div className="mt-2 space-y-1.5">
+                        <div className={`text-[11px] flex items-center gap-1.5 ${hasSms ? 'text-amber-300 font-bold' : 'text-slate-600'}`}>
+                          <Bell className="w-3 h-3" /> Twilio Gateway {hasSms ? '✓' : '(Disabled)'}
+                        </div>
+                        <div className={`text-[11px] flex items-center gap-1.5 ${hasSupport ? 'text-emerald-300 font-bold' : 'text-slate-600'}`}>
+                          <ShieldCheck className="w-3 h-3" /> 24/7 SLA Watch {hasSupport ? '✓' : '(Disabled)'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-white/[0.04] flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Ext. Adapters</span>
+                      <span className="font-bold text-white font-mono">{selectedAddons.length} Active</span>
+                    </div>
+                  </div>
+
+                  {/* Node 4: Database Infrastructure */}
+                  <div className="bg-[#121826] border border-white/[0.06] rounded-2xl p-5 relative group hover:border-indigo-500/50 transition-all flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="bg-emerald-500/20 p-2 rounded-xl text-emerald-400 border border-emerald-500/30">
+                          <Database className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Node 04</span>
+                      </div>
+                      <div className="text-sm font-extrabold text-white">Supabase Cloud</div>
+                      <div className="text-xs text-slate-400 mt-1">PostgreSQL + RLS Security</div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-white/[0.04] flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Sprint Mode</span>
+                      <span className="font-bold text-indigo-400">{selectedTier.name}</span>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Bottom Technical Spec Banner */}
+                <div className="mt-6 p-4 rounded-2xl bg-[#0e121a] border border-white/[0.03] flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <Cloud className="w-4 h-4 text-indigo-400" />
+                    <span>Auto-Scaling Cloud Hosting</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-indigo-400" />
+                    <span>Global Edge CDN Deployment</span>
+                  </div>
+                  <div className="flex items-center gap-2 font-mono text-slate-300">
+                    <span className="text-emerald-400 font-bold">99.9% Uptime Guarantee</span>
                   </div>
                 </div>
               </div>

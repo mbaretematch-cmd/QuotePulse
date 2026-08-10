@@ -25,7 +25,10 @@ import {
   Cloud,
   Activity,
   Workflow,
-  Globe
+  Globe,
+  TrendingUp,
+  Coins,
+  BarChart3
 } from 'lucide-react';
 
 // Initialize Supabase Client
@@ -184,12 +187,20 @@ export default function App() {
 
   const totalPipelineValue = quotes.reduce((acc, q) => acc + Number(q.estimated_price), 0);
 
-  // System Topology Calculations
+  // System Topology Calculations (Extension #1)
   const hasSms = selectedAddons.includes('sms-notifications');
   const hasBranding = selectedAddons.includes('branding-custom');
   const hasSupport = selectedAddons.includes('priority-support');
   const totalActiveNodes = 3 + (hasSms ? 1 : 0) + (hasBranding ? 1 : 0) + (hasSupport ? 1 : 0);
   const estimatedRps = scopeUnits * 140;
+
+  // Business ROI Calculations (Extension #2)
+  const totalQuoteCost = calculateTotal();
+  const estimatedHoursSavedWeekly = Math.round(scopeUnits * 3.5) + (selectedService.id === 'workflow-auto' ? 8 : 4);
+  const hourlyLaborCostGBP = 30; // £30/hr standard operational labor cost
+  const annualSavingsGBP = estimatedHoursSavedWeekly * 52 * hourlyLaborCostGBP;
+  const paybackMonths = annualSavingsGBP > 0 ? (totalQuoteCost / (annualSavingsGBP / 12)).toFixed(1) : '1.0';
+  const processEfficiencyGain = Math.min(88, 30 + scopeUnits * 4);
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
@@ -507,6 +518,82 @@ export default function App() {
                   <div className="flex items-center gap-2 font-mono text-slate-300">
                     <span className="text-emerald-400 font-bold">99.9% Uptime Guarantee</span>
                   </div>
+                </div>
+              </div>
+
+              {/* EXTENSION #2: Business ROI & Cost-Savings Estimator */}
+              <div className="border border-emerald-900/40 bg-gradient-to-br from-[#0c1018] via-[#090d15] to-[#0c1018] rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                {/* ROI Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-white/[0.04]">
+                  <div>
+                    <div className="flex items-center gap-2.5 text-emerald-400 mb-1">
+                      <TrendingUp className="w-5 h-5" />
+                      <span className="font-extrabold uppercase text-xs tracking-wider">Financial Impact Analysis</span>
+                    </div>
+                    <h3 className="text-2xl font-black text-white tracking-tight">
+                      Business ROI & Savings Forecast
+                    </h3>
+                  </div>
+
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-mono">
+                    <BarChart3 className="w-4 h-4 text-emerald-400" />
+                    +{processEfficiencyGain}% Efficiency Boost
+                  </span>
+                </div>
+
+                {/* ROI Metric Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  
+                  {/* Metric 1: Hours Saved */}
+                  <div className="bg-[#121826] border border-white/[0.06] rounded-2xl p-6 relative group hover:border-emerald-500/50 transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="bg-emerald-500/20 p-2.5 rounded-xl text-emerald-400 border border-emerald-500/30">
+                        <Clock className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Time Recovery</span>
+                    </div>
+                    <div className="text-3xl font-black text-white tracking-tight">
+                      ~{estimatedHoursSavedWeekly} <span className="text-base font-bold text-slate-400">hrs/wk</span>
+                    </div>
+                    <div className="text-xs text-slate-400 mt-2 leading-relaxed">
+                      Manual data entry & status calls eliminated across {scopeUnits} {selectedService.unitLabel.toLowerCase()}.
+                    </div>
+                  </div>
+
+                  {/* Metric 2: Annual Cost Savings */}
+                  <div className="bg-gradient-to-b from-emerald-950/30 to-[#121826] border border-emerald-500/40 rounded-2xl p-6 relative group shadow-lg">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="bg-emerald-600 p-2.5 rounded-xl text-white shadow-lg shadow-emerald-600/30">
+                        <Coins className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Annual Return</span>
+                    </div>
+                    <div className="text-3xl font-black text-emerald-400 tracking-tight">
+                      £{annualSavingsGBP.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-emerald-200/70 mt-2 leading-relaxed">
+                      Estimated yearly operational cost savings at baseline £30/hr labor rates.
+                    </div>
+                  </div>
+
+                  {/* Metric 3: Payback Horizon */}
+                  <div className="bg-[#121826] border border-white/[0.06] rounded-2xl p-6 relative group hover:border-emerald-500/50 transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="bg-indigo-500/20 p-2.5 rounded-xl text-indigo-400 border border-indigo-500/30">
+                        <Zap className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Capital Recovery</span>
+                    </div>
+                    <div className="text-3xl font-black text-white tracking-tight">
+                      {paybackMonths} <span className="text-base font-bold text-indigo-400">Months</span>
+                    </div>
+                    <div className="text-xs text-slate-400 mt-2 leading-relaxed">
+                      Full setup cost recovered through automated labor savings.
+                    </div>
+                  </div>
+
                 </div>
               </div>
 

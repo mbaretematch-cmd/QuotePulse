@@ -28,7 +28,9 @@ import {
   Globe,
   TrendingUp,
   Coins,
-  BarChart3
+  BarChart3,
+  Tag,
+  Gift
 } from 'lucide-react';
 
 // Initialize Supabase Client
@@ -85,6 +87,11 @@ export default function App() {
   const [scopeUnits, setScopeUnits] = useState<number>(4);
   const [selectedAddons, setSelectedAddons] = useState<string[]>(['sms-notifications', 'priority-support']);
   
+  // Extension #4 State: Promo Code Engine
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
+  const [promoMessage, setPromoMessage] = useState<string>('');
+  
   // Lead Intake Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clientName, setClientName] = useState('');
@@ -129,7 +136,7 @@ export default function App() {
     return `${currInfo.symbol}${converted.toLocaleString()}`;
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotalGBP = () => {
     const base = selectedService.basePrice;
     const unitsCost = scopeUnits * selectedService.unitPrice;
     const addonsCost = selectedAddons.reduce((acc, addonId) => {
@@ -137,8 +144,28 @@ export default function App() {
       return acc + (item ? item.price : 0);
     }, 0);
 
-    const subtotal = (base + unitsCost + addonsCost);
-    return Math.round(subtotal * selectedTier.multiplier);
+    const subtotal = (base + unitsCost + addonsCost) * selectedTier.multiplier;
+    return Math.round(subtotal);
+  };
+
+  const calculateTotal = () => {
+    const subtotalGBP = calculateSubtotalGBP();
+    const discountGBP = subtotalGBP * appliedDiscount;
+    return Math.round(subtotalGBP - discountGBP);
+  };
+
+  const handleApplyPromo = () => {
+    const cleanCode = promoCodeInput.trim().toUpperCase();
+    if (cleanCode === 'LAMPACHO15' || cleanCode === 'LAUNCH15') {
+      setAppliedDiscount(0.15);
+      setPromoMessage('15% Partner Launch Discount Applied!');
+    } else if (cleanCode === 'VIP20') {
+      setAppliedDiscount(0.20);
+      setPromoMessage('20% Enterprise VIP Discount Applied!');
+    } else {
+      setAppliedDiscount(0);
+      setPromoMessage('Invalid promo code. Try "LAMPACHO15" or "VIP20"');
+    }
   };
 
   const handleAddonToggle = (id: string) => {
@@ -710,6 +737,42 @@ export default function App() {
                     <div className="flex justify-between text-amber-300 text-xs font-bold pt-2 border-t border-white/[0.04]">
                       <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Express Launch Surcharge</div>
                       <span>+30% Delivery Fee</span>
+                    </div>
+                  )}
+                  {appliedDiscount > 0 && (
+                    <div className="flex justify-between text-emerald-400 text-xs font-bold pt-2 border-t border-white/[0.04]">
+                      <div className="flex items-center gap-1.5"><Gift className="w-3.5 h-3.5" /> Applied Partner Discount</div>
+                      <span>-{appliedDiscount * 100}% Discount</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* EXTENSION #4: Interactive Promo Code Engine */}
+                <div className="pt-4 border-t border-white/[0.04] relative z-10">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                    Partner / Promo Code
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Tag className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500" />
+                      <input
+                        type="text"
+                        placeholder="Try: LAMPACHO15 or VIP20"
+                        value={promoCodeInput}
+                        onChange={(e) => setPromoCodeInput(e.target.value)}
+                        className="w-full bg-[#121826] border border-white/[0.04] rounded-xl pl-9 pr-3 py-2 text-xs font-mono text-white focus:border-indigo-500 outline-none uppercase"
+                      />
+                    </div>
+                    <button
+                      onClick={handleApplyPromo}
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold px-4 py-2 rounded-xl transition-all shadow-md active:scale-95"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  {promoMessage && (
+                    <div className={`text-[11px] font-bold mt-2.5 flex items-center gap-1.5 ${appliedDiscount > 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {appliedDiscount > 0 ? '✓' : '⚠️'} {promoMessage}
                     </div>
                   )}
                 </div>
